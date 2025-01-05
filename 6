@@ -1,0 +1,238 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace WindowsFormsApp3
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            LoadData();
+            LoadComboBox();
+        }
+
+        private void LoadData()
+        {
+            try
+            {
+                using (var context = new Model1())
+                {
+                    var lopss = context.SinhViens
+                        .Select(l => new
+                        {
+                            l.MaSV,
+                            l.HoTen,
+                            l.DiemTB,
+                            l.MaKhoa,
+                            TenKhoa = l.Khoa.TenKhoa,
+
+                        })
+                        .ToList();
+
+                    // Hiển thị dữ liệu trên DataGridView
+                    dataGridView1.DataSource = lopss;
+                    dataGridView1.Columns["TenKhoa"].HeaderText = "Tên Khoa";
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Đã xảy ra lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        private void LoadComboBox()
+        {
+            using (var context = new Model1())
+            {
+                comboBox1.DataSource = context.Khoas.Select(l => l.TenKhoa).ToList();
+            }
+        }
+
+        private void btnthem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (var context = new Model1())
+                {
+                    // Lấy thông tin từ các điều khiển
+                    string maSV = txtmasinhvien.Text.Trim();
+                    string hoTen = txthoten.Text.Trim();
+                    string tenKhoa = comboBox1.SelectedItem.ToString();
+                    string diemTBText = textBox1.Text.Trim();
+
+                  
+                    if (string.IsNullOrEmpty(maSV))
+                    {
+                        MessageBox.Show("Mã sinh viên không được để trống!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    
+                    var khoa = context.Khoas.FirstOrDefault(k => k.TenKhoa == tenKhoa);
+                    if (khoa == null)
+                    {
+                        MessageBox.Show("Khoa không tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+              
+                    decimal diemTB;
+                    if (!decimal.TryParse(diemTBText, out diemTB))
+                    {
+                        MessageBox.Show("Điểm trung bình không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Tạo đối tượng SinhViên và thêm vào cơ sở dữ liệu
+                    var sinhVien = new SinhVien
+                    {
+                        
+                        HoTen = hoTen,
+                        MaKhoa = khoa.MaKhoa
+                    };
+
+                    context.SinhViens.Add(sinhVien);
+                    context.SaveChanges();
+
+                    // Cập nhật lại DataGridView sau khi thêm
+                    LoadData();
+
+                    // Thông báo thành công
+                    MessageBox.Show("Thêm sinh viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Đã xảy ra lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnxoa_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (var context = new Model1())
+                {
+                    // Lấy mã sinh viên từ TextBox hoặc DataGridView (tuỳ theo cách lấy dữ liệu)
+                    string maSV = txthoten.Text.Trim();
+
+                    // Kiểm tra mã sinh viên có được nhập không
+                    if (string.IsNullOrEmpty(maSV))
+                    {
+                        MessageBox.Show("Vui lòng nhập Mã Sinh Viên cần xóa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Tìm sinh viên trong cơ sở dữ liệu
+                    var sinhVien = context.SinhViens.FirstOrDefault(sv => sv.HoTen == maSV);
+
+                    // Nếu không tìm thấy sinh viên
+                    if (sinhVien == null)
+                    {
+                        MessageBox.Show("Không tìm thấy sinh viên với tên này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Xóa sinh viên
+                    context.SinhViens.Remove(sinhVien);
+                    context.SaveChanges();
+
+                    // Cập nhật lại DataGridView sau khi xóa
+                    LoadData();
+
+                    // Thông báo thành công
+                    MessageBox.Show("Xóa sinh viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Đã xảy ra lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnsua_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (var context = new Model1())
+                {
+                    // Lấy thông tin từ các điều khiển
+                    string maSV = txtmasinhvien.Text.Trim();
+                    string hoTen = txthoten.Text.Trim();
+                    string tenKhoa = comboBox1.SelectedItem.ToString();
+                    string diemTBText = textBox1.Text.Trim();
+
+                    // Kiểm tra xem mã sinh viên có được nhập không
+                    if (string.IsNullOrEmpty(maSV))
+                    {
+                        MessageBox.Show("Vui lòng nhập Mã Sinh Viên cần sửa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Tìm sinh viên trong cơ sở dữ liệu
+                    var sinhVien = context.SinhViens.FirstOrDefault(sv => sv.HoTen == maSV);
+
+                    // Nếu không tìm thấy sinh viên
+                    if (sinhVien == null)
+                    {
+                        MessageBox.Show("Không tìm thấy sinh viên với mã này!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Kiểm tra xem tên khoa có hợp lệ không
+                    var khoa = context.Khoas.FirstOrDefault(k => k.TenKhoa == tenKhoa);
+                    if (khoa == null)
+                    {
+                        MessageBox.Show("Khoa không tồn tại!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Kiểm tra xem điểm trung bình có hợp lệ không
+                    decimal diemTB;
+                    if (!decimal.TryParse(diemTBText, out diemTB))
+                    {
+                        MessageBox.Show("Điểm trung bình không hợp lệ!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    // Cập nhật thông tin sinh viên
+                    sinhVien.HoTen = hoTen;
+                    sinhVien.MaKhoa = khoa.MaKhoa;
+                   
+
+                    
+                    context.SaveChanges();
+
+                
+                    LoadData();
+
+                
+                    MessageBox.Show("Cập nhật thông tin sinh viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Đã xảy ra lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnthoat_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+    }
+    }
+
+
+
